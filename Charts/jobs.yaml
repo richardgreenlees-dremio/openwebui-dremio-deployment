@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-model-loader
+  namespace: openwebui
+spec:
+  template:
+    spec:
+      containers:
+        - name: ollama-model-loader
+          image: curlimages/curl:latest
+          command:
+          - sh
+          - -c
+          - |
+            # Wait for Ollama service
+            until curl -f http://svc-ollama:11434/api/tags; do
+              echo "Waiting for Ollama service to be available..."
+              sleep 5;
+            done
+            # Pull models
+            curl -X POST http://svc-ollama:11434/api/pull \
+              -H "Content-Type: application/json" \
+              -d '{"name": "llama3.2"}'
+      restartPolicy: OnFailure
+  backoffLimit: 3
