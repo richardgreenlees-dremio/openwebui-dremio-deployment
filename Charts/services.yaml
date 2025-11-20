@@ -20,6 +20,24 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app: mcpo
+  name: svc-mcpo
+  namespace: openwebui
+spec:
+  selector:
+    app: mcpo
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
     app: openwebui
   name: svc-openwebui
   namespace: openwebui
@@ -28,5 +46,5 @@ spec:
     app: openwebui
   ports:
   - protocol: TCP
-    port: 8080
+    port: 3000
     targetPort: 8080

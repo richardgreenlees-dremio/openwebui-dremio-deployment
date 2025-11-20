@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcpo-configmap
+  namespace: openwebui
+data:
+  mcpo-config.json: |
+    {
+      "mcpServers": {
+        "dremio": {
+          "command": "uv",
+          "args": [
+            "run",
+            "--directory",
+            "/dremio-mcp",
+            "dremio-mcp-server",
+            "run",
+            "--cfg",
+            "/app/config/dremio-config.yaml"
+          ]
+        }
+      }
+    }
+  dremio-config.yaml: |
+    dremio:
+      enable_search: false
+      pat: "{DREMIO_PAT}"
+      uri: {DREMIO_URI}
+    tools:
+      server_mode: FOR_DATA_PATTERNS

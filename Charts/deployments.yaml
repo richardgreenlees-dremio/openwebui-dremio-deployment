@@ -44,6 +44,51 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app: mcpo
+  name: mcpo
+  namespace: openwebui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcpo
+  template:
+    metadata:
+      labels:
+        app: mcpo
+    spec:
+      containers:
+        - name: mcpo
+          image: ghcr.io/open-webui/mcpo:main
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: 1
+              memory: 1Gi
+            limits:
+              cpu: 1
+              memory: 1Gi
+          args:
+            - --config
+            - /app/config/mcpo-config.json
+          volumeMounts:
+            - name: mcpo-config-volume
+              mountPath: /app/config
+      volumes:
+        - name: mcpo-config-volume
+          configMap:
+            name: mcpo-configmap
+        - name: mcpo-data
+          persistentVolumeClaim:
+            claimName: pvc-mcpo
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
     app: openwebui
   name: openwebui
   namespace: openwebui
