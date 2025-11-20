@@ -12,7 +12,7 @@ data:
           "args": [
             "run",
             "--directory",
-            "/dremio-mcp",
+            "/dremio-mcp/mcp-server",
             "dremio-mcp-server",
             "run",
             "--cfg",

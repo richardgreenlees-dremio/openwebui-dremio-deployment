@@ -6,6 +6,13 @@ metadata:
 spec:
   template:
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: webui
+                    operator: Exists
       containers:
         - name: ollama-model-loader
           image: curlimages/curl:latest
@@ -22,5 +29,44 @@ spec:
             curl -X POST http://svc-ollama:11434/api/pull \
               -H "Content-Type: application/json" \
               -d '{"name": "llama3.2"}'
+      restartPolicy: OnFailure
+  backoffLimit: 3
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dremio-mcp-loader
+  namespace: openwebui
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: webui
+                    operator: Exists
+      containers:
+        - name: dremio-mcp-loader
+          image: alpine/git:latest
+          command:
+          - sh
+          - -c
+          - |
+            if [ ! -d /dremio-mcp/mcp-server/.git ]; then
+              git clone https://github.com/dremio/dremio-mcp.git /dremio-mcp/mcp-server;
+            else
+              cd /dremio-mcp/mcp-server && git pull;
+            fi
+          volumeMounts:
+            - name: pvc-mcpo
+              mountPath: /dremio-mcp
+      volumes:
+        - name: pvc-mcpo
+          persistentVolumeClaim:
+            claimName: pvc-mcpo
       restartPolicy: OnFailure
   backoffLimit: 3

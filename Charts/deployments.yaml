@@ -33,6 +33,13 @@ spec:
             limits:
               cpu: 2
               memory: 8Gi
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: webui
+                    operator: Exists
       volumes:
         - name: ollama-data
           persistentVolumeClaim:
@@ -57,6 +64,22 @@ spec:
       labels:
         app: mcpo
     spec:
+      initContainers:
+        - name: wait-for-dremio-mcp
+          image: busybox:latest
+          command:
+          - sh
+          - -c
+          - |
+            echo "Waiting for dremio-mcp repository to be cloned..."
+            until [ -f /dremio-mcp/mcp-server/.git/config ]; do
+              echo "Repository not found, waiting..."
+              sleep 5
+            done
+            echo "Repository found, proceeding with mcpo deployment"
+          volumeMounts:
+            - name: mcpo-data
+              mountPath: /dremio-mcp
       containers:
         - name: mcpo
           image: ghcr.io/open-webui/mcpo:main
@@ -75,6 +98,15 @@ spec:
           volumeMounts:
             - name: mcpo-config-volume
               mountPath: /app/config
+            - name: mcpo-data
+              mountPath: /dremio-mcp
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: webui
+                    operator: Exists
       volumes:
         - name: mcpo-config-volume
           configMap:
@@ -82,6 +114,7 @@ spec:
         - name: mcpo-data
           persistentVolumeClaim:
             claimName: pvc-mcpo
+            readOnly: true
 
 ---
 
@@ -121,3 +154,10 @@ spec:
               value: svc-ollama
             - name: OLLAMA_PORT
               value: "11434"
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: webui
+                    operator: Exists
