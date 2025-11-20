@@ -65,18 +65,21 @@ spec:
         app: mcpo
     spec:
       initContainers:
-        - name: wait-for-dremio-mcp
-          image: busybox:latest
+        - name: dremio-mcp-loader
+          image: alpine/git:latest
           command:
           - sh
           - -c
           - |
-            echo "Waiting for dremio-mcp repository to be cloned..."
-            until [ -f /dremio-mcp/mcp-server/.git/config ]; do
-              echo "Repository not found, waiting..."
-              sleep 5
-            done
-            echo "Repository found, proceeding with mcpo deployment"
+            echo "Cloning dremio-mcp repository..."
+            if [ ! -d /dremio-mcp/mcp-server/.git ]; then
+              git clone https://github.com/dremio/dremio-mcp.git /dremio-mcp/mcp-server
+              echo "Repository cloned successfully"
+            else
+              echo "Repository already exists, pulling latest changes..."
+              cd /dremio-mcp/mcp-server && git pull
+              echo "Repository updated successfully"
+            fi
           volumeMounts:
             - name: mcpo-data
               mountPath: /dremio-mcp
@@ -114,7 +117,6 @@ spec:
         - name: mcpo-data
           persistentVolumeClaim:
             claimName: pvc-mcpo
-            readOnly: true
 
 ---
 
