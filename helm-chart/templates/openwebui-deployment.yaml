@@ -1,0 +1,37 @@
+{{- if .Values.openwebui.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: openwebui
+    {{- include "openwebui-dremio.labels" . | nindent 4 }}
+  name: openwebui
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openwebui
+  template:
+    metadata:
+      labels:
+        app: openwebui
+    spec:
+      containers:
+        - name: openwebui
+          image: {{ .Values.openwebui.image.repository }}:{{ .Values.openwebui.image.tag }}
+          imagePullPolicy: {{ .Values.openwebui.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.openwebui.service.targetPort }}
+          resources:
+            {{- toYaml .Values.openwebui.resources | nindent 12 }}
+          env:
+            - name: OLLAMA_BASE_URL
+              value: http://{{ .Values.ollama.service.name }}:{{ .Values.ollama.service.port }}
+            - name: OLLAMA_HOST
+              value: {{ .Values.ollama.service.name }}
+            - name: OLLAMA_PORT
+              value: {{ .Values.ollama.service.port | quote }}
+      {{- include "openwebui-dremio.nodeAffinity" . | nindent 6 }}
+{{- end }}
+

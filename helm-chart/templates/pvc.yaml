@@ -1,0 +1,42 @@
+{{- if .Values.ollama.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-ollama
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "openwebui-dremio.labels" . | nindent 4 }}
+    app: ollama
+spec:
+  accessModes:
+    - {{ .Values.ollama.persistence.accessMode }}
+  {{- if .Values.ollama.persistence.storageClass }}
+  storageClassName: {{ .Values.ollama.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.ollama.persistence.size }}
+{{- end }}
+
+---
+
+{{- if .Values.mcpo.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-mcpo
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "openwebui-dremio.labels" . | nindent 4 }}
+    app: mcpo
+spec:
+  accessModes:
+    - {{ .Values.mcpo.persistence.accessMode }}
+  {{- if .Values.mcpo.persistence.storageClass }}
+  storageClassName: {{ .Values.mcpo.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.mcpo.persistence.size }}
+{{- end }}
+

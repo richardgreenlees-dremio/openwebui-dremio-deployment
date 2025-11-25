@@ -1,0 +1,108 @@
+# Production values for openwebui-dremio deployment
+# This file contains production-ready configuration examples
+
+namespace: openwebui
+
+nodeAffinity:
+  enabled: true
+  key: webui
+  operator: Exists
+
+ollama:
+  enabled: true
+  image:
+    repository: ollama/ollama
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    name: svc-ollama
+    type: ClusterIP
+    port: 11434
+  resources:
+    requests:
+      cpu: 2
+      memory: 8Gi
+    limits:
+      cpu: 4
+      memory: 16Gi
+  persistence:
+    enabled: true
+    storageClass: "gp3"  # AWS example - adjust for your cloud provider
+    accessMode: ReadWriteOnce
+    size: 100Gi
+  modelLoader:
+    enabled: true
+    model: llama3.1
+    backoffLimit: 5
+
+mcpo:
+  enabled: true
+  image:
+    repository: ghcr.io/open-webui/mcpo
+    tag: main
+    pullPolicy: Always
+  service:
+    name: svc-mcpo
+    type: LoadBalancer
+    port: 8000
+    annotations:
+      # Uncomment for AWS internal load balancer
+      # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+  resources:
+    requests:
+      cpu: 4
+      memory: 16Gi
+    limits:
+      cpu: 8
+      memory: 32Gi
+  persistence:
+    enabled: true
+    storageClass: "gp3"  # AWS example - adjust for your cloud provider
+    accessMode: ReadWriteOnce
+    size: 50Gi
+  mcpServers:
+    dremio:
+      enabled: true
+      repository: https://github.com/dremio/dremio-mcp.git
+      path: /dremio-mcp/mcp-server
+      command: uv
+      args:
+        - run
+        - --directory
+        - /dremio-mcp/mcp-server
+        - dremio-mcp-server
+        - run
+        - --cfg
+        - /app/config/dremio-config.yaml
+      config:
+        enable_search: false
+        server_mode: FOR_DATA_PATTERNS
+
+openwebui:
+  enabled: true
+  image:
+    repository: ghcr.io/open-webui/open-webui
+    tag: main
+    pullPolicy: Always
+  service:
+    name: svc-openwebui
+    type: LoadBalancer
+    port: 443
+    targetPort: 8080
+  resources:
+    requests:
+      cpu: 2
+      memory: 4Gi
+    limits:
+      cpu: 4
+      memory: 8Gi
+
+# IMPORTANT: Override these with actual credentials
+# Use: helm install --set dremio.credentials.pat="your-pat" --set dremio.credentials.uri="your-uri"
+# Or create a separate secrets.yaml file
+dremio:
+  credentials:
+    pat: ""  # Set via --set or external secret management
+    uri: ""  # Set via --set or external secret management
+

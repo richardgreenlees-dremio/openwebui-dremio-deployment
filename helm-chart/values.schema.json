@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["namespace", "dremio"],
+  "properties": {
+    "namespace": {
+      "type": "string",
+      "description": "Kubernetes namespace for deployment"
+    },
+    "nodeAffinity": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "key": {"type": "string"},
+        "operator": {"type": "string", "enum": ["Exists", "DoesNotExist", "In", "NotIn"]}
+      }
+    },
+    "ollama": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "image": {
+          "type": "object",
+          "properties": {
+            "repository": {"type": "string"},
+            "tag": {"type": "string"},
+            "pullPolicy": {"type": "string", "enum": ["Always", "IfNotPresent", "Never"]}
+          }
+        },
+        "service": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"]},
+            "port": {"type": "integer"}
+          }
+        },
+        "persistence": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "size": {"type": "string"},
+            "storageClass": {"type": "string"},
+            "accessMode": {"type": "string"}
+          }
+        }
+      }
+    },
+    "mcpo": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "image": {
+          "type": "object",
+          "properties": {
+            "repository": {"type": "string"},
+            "tag": {"type": "string"},
+            "pullPolicy": {"type": "string", "enum": ["Always", "IfNotPresent", "Never"]}
+          }
+        },
+        "service": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"]},
+            "port": {"type": "integer"}
+          }
+        }
+      }
+    },
+    "openwebui": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "image": {
+          "type": "object",
+          "properties": {
+            "repository": {"type": "string"},
+            "tag": {"type": "string"},
+            "pullPolicy": {"type": "string", "enum": ["Always", "IfNotPresent", "Never"]}
+          }
+        },
+        "service": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string", "enum": ["ClusterIP", "NodePort", "LoadBalancer"]},
+            "port": {"type": "integer"}
+          }
+        }
+      }
+    },
+    "dremio": {
+      "type": "object",
+      "required": ["credentials"],
+      "properties": {
+        "credentials": {
+          "type": "object",
+          "required": ["pat", "uri"],
+          "properties": {
+            "pat": {
+              "type": "string",
+              "description": "Dremio Personal Access Token"
+            },
+            "uri": {
+              "type": "string",
+              "description": "Dremio URI",
+              "pattern": "^https?://.+"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

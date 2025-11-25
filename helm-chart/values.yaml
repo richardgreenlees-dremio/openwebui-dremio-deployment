@@ -1,0 +1,116 @@
+# Default values for openwebui-dremio deployment
+
+# Namespace configuration
+namespace: openwebui
+
+# Node affinity configuration
+nodeAffinity:
+  enabled: true
+  key: webui
+  operator: Exists
+
+# Ollama configuration
+ollama:
+  enabled: true
+  image:
+    repository: ollama/ollama
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    name: svc-ollama
+    type: ClusterIP
+    port: 11434
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 8Gi
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 50Gi
+  modelLoader:
+    enabled: true
+    model: llama3.1
+    backoffLimit: 3
+
+# MCPO (MCP Orchestrator) configuration
+mcpo:
+  enabled: true
+  image:
+    repository: ghcr.io/open-webui/mcpo
+    tag: main
+    pullPolicy: IfNotPresent
+  service:
+    name: svc-mcpo
+    type: LoadBalancer
+    port: 8000
+    annotations: {}
+      # For AWS internal load balancer:
+      # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      # For GCP internal load balancer:
+      # cloud.google.com/load-balancer-type: "Internal"
+      # For Azure internal load balancer:
+      # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  resources:
+    requests:
+      cpu: 2
+      memory: 8Gi
+    limits:
+      cpu: 2
+      memory: 8Gi
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+  
+  # MCP Servers configuration
+  mcpServers:
+    dremio:
+      enabled: true
+      repository: https://github.com/dremio/dremio-mcp.git
+      path: /dremio-mcp/mcp-server
+      command: uv
+      args:
+        - run
+        - --directory
+        - /dremio-mcp/mcp-server
+        - dremio-mcp-server
+        - run
+        - --cfg
+        - /app/config/dremio-config.yaml
+      config:
+        enable_search: false
+        server_mode: FOR_DATA_PATTERNS
+
+# Open WebUI configuration
+openwebui:
+  enabled: true
+  image:
+    repository: ghcr.io/open-webui/open-webui
+    tag: main
+    pullPolicy: IfNotPresent
+  service:
+    name: svc-openwebui
+    type: LoadBalancer
+    port: 3000
+    targetPort: 8080
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+
+# Dremio credentials (should be overridden with actual values)
+dremio:
+  credentials:
+    # These should be set via --set flags or a separate values file
+    pat: "YOUR_DREMIO_PAT"
+    uri: "YOUR_DREMIO_URI"
+

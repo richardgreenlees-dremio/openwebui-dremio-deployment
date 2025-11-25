@@ -1,0 +1,33 @@
+{{- if and .Values.ollama.enabled .Values.ollama.modelLoader.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-model-loader
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "openwebui-dremio.labels" . | nindent 4 }}
+    app: ollama
+spec:
+  template:
+    spec:
+      {{- include "openwebui-dremio.nodeAffinity" . | nindent 6 }}
+      containers:
+        - name: ollama-model-loader
+          image: curlimages/curl:latest
+          command:
+          - sh
+          - -c
+          - |
+            # Wait for Ollama service
+            until curl -f http://{{ .Values.ollama.service.name }}:{{ .Values.ollama.service.port }}/api/tags; do
+              echo "Waiting for Ollama service to be available..."
+              sleep 5;
+            done
+            # Pull models
+            curl -X POST http://{{ .Values.ollama.service.name }}:{{ .Values.ollama.service.port }}/api/pull \
+              -H "Content-Type: application/json" \
+              -d '{"name": "{{ .Values.ollama.modelLoader.model }}"}'
+      restartPolicy: OnFailure
+  backoffLimit: {{ .Values.ollama.modelLoader.backoffLimit }}
+{{- end }}
+

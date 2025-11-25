@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcpo-configmap
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "openwebui-dremio.labels" . | nindent 4 }}
+    app: mcpo
+data:
+  mcpo-config.json: |
+    {
+      "mcpServers": {
+        {{- $first := true }}
+        {{- range $name, $server := .Values.mcpo.mcpServers }}
+        {{- if $server.enabled }}
+        {{- if not $first }},{{ end }}
+        "{{ $name }}": {
+          "command": "{{ $server.command }}",
+          "args": [
+            {{- range $i, $arg := $server.args }}
+            {{- if $i }},{{ end }}
+            "{{ $arg }}"
+            {{- end }}
+          ]
+        }
+        {{- $first = false }}
+        {{- end }}
+        {{- end }}
+      }
+    }
+  
+  {{- if .Values.mcpo.mcpServers.dremio.enabled }}
+  dremio-config.yaml: |
+    dremio:
+      enable_search: {{ .Values.mcpo.mcpServers.dremio.config.enable_search }}
+      pat: "${DREMIO_PAT}"
+      uri: ${DREMIO_URI}
+    tools:
+      server_mode: {{ .Values.mcpo.mcpServers.dremio.config.server_mode }}
+  {{- end }}
+

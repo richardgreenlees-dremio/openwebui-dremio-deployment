@@ -1,0 +1,100 @@
+{{- if .Values.mcpo.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mcpo
+    {{- include "openwebui-dremio.labels" . | nindent 4 }}
+  name: mcpo
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcpo
+  template:
+    metadata:
+      labels:
+        app: mcpo
+    spec:
+      initContainers:
+        {{- if .Values.mcpo.mcpServers.dremio.enabled }}
+        - name: dremio-mcp-loader
+          image: alpine/git:latest
+          command:
+          - sh
+          - -c
+          - |
+            echo "Cloning dremio-mcp repository..."
+            if [ ! -d {{ .Values.mcpo.mcpServers.dremio.path }}/.git ]; then
+              git clone {{ .Values.mcpo.mcpServers.dremio.repository }} {{ .Values.mcpo.mcpServers.dremio.path }}
+              echo "Repository cloned successfully"
+            else
+              echo "Repository already exists, pulling latest changes..."
+              cd {{ .Values.mcpo.mcpServers.dremio.path }} && git pull
+              echo "Repository updated successfully"
+            fi
+          volumeMounts:
+            - name: mcpo-data
+              mountPath: /dremio-mcp
+        {{- end }}
+        - name: config-substitution
+          image: busybox:latest
+          command:
+          - sh
+          - -c
+          - |
+            echo "Substituting environment variables in config files..."
+            {{- if .Values.mcpo.mcpServers.dremio.enabled }}
+            # Read the template and substitute variables
+            sed -e "s|\${DREMIO_PAT}|${DREMIO_PAT}|g" \
+                -e "s|\${DREMIO_URI}|${DREMIO_URI}|g" \
+                /app/config-template/dremio-config.yaml > /app/config-runtime/dremio-config.yaml
+            {{- end }}
+            # Copy the mcpo-config.json as-is
+            cp /app/config-template/mcpo-config.json /app/config-runtime/mcpo-config.json
+            echo "Configuration files prepared successfully"
+          env:
+            - name: DREMIO_PAT
+              valueFrom:
+                secretKeyRef:
+                  name: dremio-credentials
+                  key: dremio-pat
+            - name: DREMIO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: dremio-credentials
+                  key: dremio-uri
+          volumeMounts:
+            - name: mcpo-config-volume
+              mountPath: /app/config-template
+            - name: config-runtime
+              mountPath: /app/config-runtime
+      containers:
+        - name: mcpo
+          image: {{ .Values.mcpo.image.repository }}:{{ .Values.mcpo.image.tag }}
+          imagePullPolicy: {{ .Values.mcpo.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.mcpo.service.port }}
+          resources:
+            {{- toYaml .Values.mcpo.resources | nindent 12 }}
+          args:
+            - --config
+            - /app/config/mcpo-config.json
+          volumeMounts:
+            - name: config-runtime
+              mountPath: /app/config
+            - name: mcpo-data
+              mountPath: /dremio-mcp
+      {{- include "openwebui-dremio.nodeAffinity" . | nindent 6 }}
+      volumes:
+        - name: mcpo-config-volume
+          configMap:
+            name: mcpo-configmap
+        - name: config-runtime
+          emptyDir: {}
+        - name: mcpo-data
+          persistentVolumeClaim:
+            claimName: pvc-mcpo
+{{- end }}
+

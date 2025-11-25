@@ -1,0 +1,101 @@
+# Development values for openwebui-dremio deployment
+# This file contains minimal resource configuration for development/testing
+
+namespace: openwebui-dev
+
+nodeAffinity:
+  enabled: false  # Disable node affinity for local development
+
+ollama:
+  enabled: true
+  image:
+    repository: ollama/ollama
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    name: svc-ollama
+    type: ClusterIP
+    port: 11434
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+  persistence:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    accessMode: ReadWriteOnce
+    size: 10Gi
+  modelLoader:
+    enabled: true
+    model: llama3.2  # Smaller model for development
+    backoffLimit: 3
+
+mcpo:
+  enabled: true
+  image:
+    repository: ghcr.io/open-webui/mcpo
+    tag: main
+    pullPolicy: IfNotPresent
+  service:
+    name: svc-mcpo
+    type: ClusterIP  # Use ClusterIP for development
+    port: 8000
+    annotations: {}
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+  persistence:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    accessMode: ReadWriteOnce
+    size: 5Gi
+  mcpServers:
+    dremio:
+      enabled: true
+      repository: https://github.com/dremio/dremio-mcp.git
+      path: /dremio-mcp/mcp-server
+      command: uv
+      args:
+        - run
+        - --directory
+        - /dremio-mcp/mcp-server
+        - dremio-mcp-server
+        - run
+        - --cfg
+        - /app/config/dremio-config.yaml
+      config:
+        enable_search: false
+        server_mode: FOR_DATA_PATTERNS
+
+openwebui:
+  enabled: true
+  image:
+    repository: ghcr.io/open-webui/open-webui
+    tag: main
+    pullPolicy: IfNotPresent
+  service:
+    name: svc-openwebui
+    type: NodePort  # Use NodePort for local access
+    port: 3000
+    targetPort: 8080
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+
+# Development credentials - replace with your test environment values
+dremio:
+  credentials:
+    pat: "YOUR_DREMIO_DEV_PAT"
+    uri: "YOUR_DREMIO_DEV_URI"
+
