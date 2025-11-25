@@ -28,8 +28,8 @@ spec:
               mountPath: /root/.ollama
           resources:
             requests:
-              cpu: 1
-              memory: 2Gi
+              cpu: 2
+              memory: 8Gi
             limits:
               cpu: 2
               memory: 8Gi
@@ -83,6 +83,36 @@ spec:
           volumeMounts:
             - name: mcpo-data
               mountPath: /dremio-mcp
+        - name: config-substitution
+          image: busybox:latest
+          command:
+          - sh
+          - -c
+          - |
+            echo "Substituting environment variables in config files..."
+            # Read the template and substitute variables
+            sed -e "s|\${DREMIO_PAT}|${DREMIO_PAT}|g" \
+                -e "s|\${DREMIO_URI}|${DREMIO_URI}|g" \
+                /app/config-template/dremio-config.yaml > /app/config-runtime/dremio-config.yaml
+            # Copy the mcpo-config.json as-is
+            cp /app/config-template/mcpo-config.json /app/config-runtime/mcpo-config.json
+            echo "Configuration files prepared successfully"
+          env:
+            - name: DREMIO_PAT
+              valueFrom:
+                secretKeyRef:
+                  name: dremio-credentials
+                  key: dremio-pat
+            - name: DREMIO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: dremio-credentials
+                  key: dremio-uri
+          volumeMounts:
+            - name: mcpo-config-volume
+              mountPath: /app/config-template
+            - name: config-runtime
+              mountPath: /app/config-runtime
       containers:
         - name: mcpo
           image: ghcr.io/open-webui/mcpo:main
@@ -90,16 +120,16 @@ spec:
             - containerPort: 8000
           resources:
             requests:
-              cpu: 1
-              memory: 1Gi
+              cpu: 2
+              memory: 8Gi
             limits:
-              cpu: 1
-              memory: 1Gi
+              cpu: 2
+              memory: 8Gi
           args:
             - --config
             - /app/config/mcpo-config.json
           volumeMounts:
-            - name: mcpo-config-volume
+            - name: config-runtime
               mountPath: /app/config
             - name: mcpo-data
               mountPath: /dremio-mcp
@@ -114,6 +144,8 @@ spec:
         - name: mcpo-config-volume
           configMap:
             name: mcpo-configmap
+        - name: config-runtime
+          emptyDir: {}
         - name: mcpo-data
           persistentVolumeClaim:
             claimName: pvc-mcpo
@@ -144,11 +176,11 @@ spec:
             - containerPort: 8080
           resources:
             requests:
-              cpu: 1
-              memory: 2Gi
+              cpu: 2
+              memory: 8Gi
             limits:
               cpu: 2
-              memory: 4Gi
+              memory: 8Gi
           env:
             - name: OLLAMA_BASE_URL
               value: http://svc-ollama:11434

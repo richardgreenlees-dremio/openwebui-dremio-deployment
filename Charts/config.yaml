@@ -24,7 +24,7 @@ data:
   dremio-config.yaml: |
     dremio:
       enable_search: false
-      pat: "{DREMIO_PAT}"
-      uri: {DREMIO_URI}
+      pat: "${DREMIO_PAT}"
+      uri: ${DREMIO_URI}
     tools:
       server_mode: FOR_DATA_PATTERNS

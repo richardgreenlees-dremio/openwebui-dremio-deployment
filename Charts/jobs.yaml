@@ -28,7 +28,7 @@ spec:
             # Pull models
             curl -X POST http://svc-ollama:11434/api/pull \
               -H "Content-Type: application/json" \
-              -d '{"name": "llama3.2"}'
+              -d '{"name": "llama3.1"}'
       restartPolicy: OnFailure
   backoffLimit: 3
 
